@@ -2,13 +2,14 @@ package auth
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/caojs/go-template/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/google"
+	"github.com/markbates/goth/providers/openidConnect"
 	"github.com/pkg/errors"
-	"net/http"
 )
 
 var (
@@ -47,10 +48,9 @@ func RouterHandler(r gin.IRouter, config *config.Config) {
 }
 
 func gothConfig(config *config.Config) {
-	googlePvd := google.New(config.Google.ClientID, config.Google.Secret, config.Google.Callback)
-	goth.UseProviders(
-		googlePvd,
-	)
-
-	providers["google"] = googlePvd
+	openidConnect, _ := openidConnect.New(config.Google.ClientID, config.Google.Secret, config.Google.Callback, config.Google.DiscoveryURL)
+	if openidConnect != nil {
+		goth.UseProviders(openidConnect)
+		providers["openid-connect"] = openidConnect
+	}
 }

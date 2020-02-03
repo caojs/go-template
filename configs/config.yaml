@@ -2,8 +2,10 @@ host: 0.0.0.0
 port: 9009
 google:
   client_id:
-    client-id
+    client_id
   secret:
     secret
+  discovery_url:
+    https://accounts.google.com/.well-known/openid-configuration
   callback:
-    http://localhost:9009/auth/google/callback
+    http://localhost:9009/auth/openid-connect/callback
