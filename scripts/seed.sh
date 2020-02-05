@@ -32,13 +32,19 @@ if (
 psql -U postgres -d got <<EOF
   create table users (
     id serial primary key,
-    email varchar unique not null,
-    password varchar,
-    name varchar,
-    avatar_url varchar,
+    email varchar,
+    first_name varchar,
+    last_name varchar
   );
 
-  create table oauth (
+  create table user_accounts (
+    id serial primary key,
+    user_id integer references users(id),
+    username varchar unique not null,
+    password varchar not null
+  );
+
+  create table user_providers (
     id serial primary key,
     user_id integer references users(id),
     provider varchar not null,

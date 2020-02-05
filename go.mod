@@ -10,6 +10,8 @@ require (
 	github.com/markbates/goth v1.61.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
+	github.com/sanity-io/litter v1.2.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.6.2
+	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 )
