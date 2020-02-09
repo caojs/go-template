@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/caojs/go-template/internal/auth"
+	"github.com/caojs/go-template/internal/binding"
 	cfg "github.com/caojs/go-template/internal/config"
 	"github.com/caojs/go-template/internal/erro"
 	"github.com/gin-gonic/gin"
@@ -45,6 +47,18 @@ func initConfig() {
 func run() error {
 	r := gin.Default()
 
+	r.Use(func(c *gin.Context) {
+		var s = new(struct {
+			Str string `json:"str"`
+			Num int `json:"num"`
+			Num8 int8 `json:"num8"`
+			Slice []string `json:"slice"`
+		})
+
+		binding.Bind(c.Request, s)
+
+		fmt.Println(s)
+	})
 	r.Use(erro.Handler)
 	auth.RouterHandler(r, config)
 

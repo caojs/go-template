@@ -1,5 +1,6 @@
 host: 0.0.0.0
 port: 9009
+jwt_secret: demo
 google:
   client_id:
     client-id

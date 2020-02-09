@@ -12,38 +12,17 @@ import (
 )
 
 var (
+	cfg *config.Config
 	providers = make(map[string]goth.Provider)
 )
 
 func RouterHandler(r gin.IRouter, config *config.Config) {
-	gothConfig(config)
+	cfg = config
 
-	r.GET("/auth/:provider", func(ctx *gin.Context) {
-		name := ctx.Param("provider")
-		if _, ok := providers[name]; !ok {
-			_ = ctx.AbortWithError(http.StatusBadRequest, errors.New("Provider not found"))
-			return
-		}
+	gothConfig(cfg)
 
-		newRequestCxt := context.WithValue(ctx.Request.Context(), "provider", name)
-		ctx.Request = ctx.Request.WithContext(newRequestCxt)
-
-		if gothUser, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request); err == nil {
-			ctx.JSON(http.StatusOK, gothUser)
-		} else {
-			gothic.BeginAuthHandler(ctx.Writer, ctx.Request)
-		}
-	})
-
-	r.GET("/auth/:provider/callback", func(ctx *gin.Context) {
-		user, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request)
-		if err != nil {
-			_ = ctx.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, user)
-	})
+	r.GET("/auth/:provider", oauthRequest)
+	r.GET("/auth/:provider/callback", oauthCallback)
 }
 
 func gothConfig(config *config.Config) {
@@ -54,3 +33,31 @@ func gothConfig(config *config.Config) {
 
 	providers["google"] = googlePvd
 }
+
+func oauthRequest(ctx *gin.Context) {
+	name := ctx.Param("provider")
+	if _, ok := providers[name]; !ok {
+		_ = ctx.AbortWithError(http.StatusBadRequest, errors.New("Provider not found"))
+		return
+	}
+
+	newRequestCxt := context.WithValue(ctx.Request.Context(), "provider", name)
+	ctx.Request = ctx.Request.WithContext(newRequestCxt)
+
+	if gothUser, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request); err == nil {
+		ctx.JSON(http.StatusOK, gothUser)
+	} else {
+		gothic.BeginAuthHandler(ctx.Writer, ctx.Request)
+	}
+}
+
+func oauthCallback(ctx *gin.Context) {
+	user, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request)
+	if err != nil {
+		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+

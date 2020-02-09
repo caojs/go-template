@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/spf13/viper"
-	"log"
 )
 
 type GoogleConfig struct {
@@ -14,6 +13,7 @@ type GoogleConfig struct {
 type Config struct {
 	Host string `mapstructure:"host"`
 	Port string `mapstructure:"port"`
+	JWTSecret string `mapstructure:"jwt_secret"`
 	Google GoogleConfig `mapstructure:"google"`
 }
 
@@ -34,7 +34,6 @@ func New(configFile string) (*Config, error) {
 	var config = Config{}
 
 	if err := v.ReadInConfig(); err != nil {
-		log.Print(err)
 		return &config, nil
 	}
 
