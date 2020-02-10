@@ -7,10 +7,14 @@ import (
 	cfg "github.com/caojs/go-template/internal/config"
 	"github.com/caojs/go-template/internal/erro"
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
 	"log"
 	"mime/multipart"
+	"net/http"
 	"strings"
+
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -45,7 +49,12 @@ func initConfig() {
 	config = conf
 }
 
-func run() error {
+func run() (err error) {
+	db, err := sqlx.Open("postgres", "user=postgres dbname=got")
+	if err != nil {
+		return err
+	}
+
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
@@ -65,8 +74,15 @@ func run() error {
 
 		fmt.Println(s)
 	})
+
 	r.Use(erro.Handler)
-	auth.RouterHandler(r, config)
+	_ = auth.RouterHandler(r, config, db)
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+		})
+	})
 
 	return r.Run(strings.Join([]string{ config.Host, config.Port }, ":"))
 }

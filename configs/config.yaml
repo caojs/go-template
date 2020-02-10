@@ -3,8 +3,10 @@ port: 9009
 jwt_secret: demo
 google:
   client_id:
-    client-id
+    337893329941-hlvvbpkq1oj1bqqerifjlti90h8lbu42.apps.googleusercontent.com
   secret:
-    secret
+    2pYn9-or31-wQbKhRkbudB1C
+  discovery_url:
+    https://accounts.google.com/.well-known/openid-configuration
   callback:
-    http://localhost:9009/auth/google/callback
+    http://localhost:9009/auth/openid-connect/callback

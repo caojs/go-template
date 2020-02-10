@@ -5,9 +5,10 @@ import (
 )
 
 type GoogleConfig struct {
-	ClientID string `mapstructure:"client_id"`
-	Secret string `mapstructure:"secret"`
-	Callback string `mapstructure:"callback"`
+	ClientID     string `mapstructure:"client_id"`
+	Secret       string `mapstructure:"secret"`
+	DiscoveryURL string `mapstructure:"discovery_url"`
+	Callback     string `mapstructure:"callback"`
 }
 
 type Config struct {
