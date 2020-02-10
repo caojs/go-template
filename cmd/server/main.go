@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"log"
+	"mime/multipart"
 	"strings"
 )
 
@@ -53,9 +54,14 @@ func run() error {
 			Num int `json:"num"`
 			Num8 int8 `json:"num8"`
 			Slice []string `json:"slice"`
+			Mh *multipart.FileHeader `json:"mh"`
+			Mhs []*multipart.FileHeader `json:"mhs"`
 		})
 
-		binding.Bind(c.Request, s)
+		c.Request.ParseMultipartForm(32 << 20)
+		if err := binding.Bind(c.Request, s); err != nil {
+			fmt.Println(err)
+		}
 
 		fmt.Println(s)
 	})
