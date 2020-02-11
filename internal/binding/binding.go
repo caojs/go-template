@@ -7,16 +7,16 @@ import (
 	"reflect"
 )
 
-func Bind(r *http.Request, o interface{}) error {
+func Bind(r *http.Request, o interface{}) (bool, error) {
 	v := reflect.ValueOf(o)
 	if v.Kind() != reflect.Ptr && v.Elem().Kind() != reflect.Struct {
-		return errors.New("interface must be a pointer of struct")
+		return false, errors.New("interface must be a pointer of struct")
 	}
 
 	return bind(v.Elem(), reflect.StructField{}, r)
 }
 
-func bind(v reflect.Value, f reflect.StructField, r *http.Request) error {
+func bind(v reflect.Value, f reflect.StructField, r *http.Request) (bool, error) {
 	vKind := v.Kind()
 	vType := v.Type()
 
@@ -28,26 +28,35 @@ func bind(v reflect.Value, f reflect.StructField, r *http.Request) error {
 
 	switch vKind {
 	case reflect.Ptr:
+		var isNew bool
 		vPtr := v
 		if v.IsNil() {
-			vPtr = reflect.New(v.Elem().Type())
+			isNew = true
+			vPtr = reflect.New(vType.Elem())
 		}
 
-		if err := bind(vPtr.Elem(), f, r); err != nil {
-			return err
+		setted, err := bind(vPtr.Elem(), f, r)
+		if err != nil {
+			return false, err
 		}
-
-		v.Set(vPtr)
-		return nil
+		if isNew && setted {
+			v.Set(vPtr)
+		}
+		return setted, nil
 
 	case reflect.Struct:
+		setted := false
+
 		for i := 0; i < v.NumField(); i++ {
 			sf := vType.Field(i)
-			if err := bind(v.Field(i), sf, r); err != nil {
-				return err
+			s, err := bind(v.Field(i), sf, r)
+			if err != nil {
+				return false, err
 			}
+			setted = setted || s
 		}
-		return nil
+
+		return setted, nil
 
 	default:
 		return setValue(v, f, r)
@@ -62,39 +71,44 @@ func tagName(f reflect.StructField) string {
 	return tag
 }
 
-func setValue(v reflect.Value, f reflect.StructField, r *http.Request) error {
+func setValue(v reflect.Value, f reflect.StructField, r *http.Request) (bool, error) {
 	tag := tagName(f)
 	if tag == "" {
-		return nil
+		return false, nil
 	}
 
 	if v.Kind() == reflect.Slice {
+		setted := false
 		if vs, ok := r.PostForm[tag]; ok {
 			vSlide := reflect.MakeSlice(v.Type(), 0, len(vs))
 			elemKind := v.Type().Elem().Kind()
 
 			for _, value := range vs {
 				if convertValue, err := convert(elemKind, value); err != nil {
-					return err
+					return false, err
 				} else {
 					vSlide = reflect.Append(vSlide, convertValue)
+					setted = true
 				}
 			}
 
-			v.Set(vSlide)
+			if setted {
+				v.Set(vSlide)
+			}
 		}
-		return nil
+
+		return setted, nil
 	}
 
 	if r.PostForm.Get(tag) == "" {
-		return nil
+		return false, nil
 	}
 
 	if convertValue, err := convert(v.Kind(), r.PostForm.Get(tag)); err != nil {
-		return err
+		return false, err
 	} else {
 		v.Set(convertValue)
-		return nil
+		return true, nil
 	}
 }
 
@@ -106,21 +120,21 @@ func convert(vKind reflect.Kind, value string) (reflect.Value, error) {
 	return reflect.Value{}, errors.New("unsupported converter")
 }
 
-func setMultipartValue(v reflect.Value, f reflect.StructField, r *http.Request) error {
+func setMultipartValue(v reflect.Value, f reflect.StructField, r *http.Request) (bool, error) {
 	tag := tagName(f)
 	if tag == "" {
-		return nil
+		return false, nil
 	}
 
 	fhs := r.MultipartForm.File[tag]
 
 	if len(fhs) == 0 {
-		return nil
+		return false, nil
 	}
 
 	if _, ok := v.Interface().(*multipart.FileHeader); ok {
 		v.Set(reflect.ValueOf(fhs[0]))
-		return nil
+		return true, nil
 	}
 
 	if _, ok := v.Interface().([]*multipart.FileHeader); ok {
@@ -129,8 +143,8 @@ func setMultipartValue(v reflect.Value, f reflect.StructField, r *http.Request) 
 			vSlice = reflect.Append(vSlice, reflect.ValueOf(fh))
 		}
 		v.Set(vSlice)
-		return nil
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }

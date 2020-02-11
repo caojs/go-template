@@ -19,8 +19,8 @@ import (
 
 var (
 	configFile string
-	config *cfg.Config
-	rootCmd = &cobra.Command{
+	config     *cfg.Config
+	rootCmd    = &cobra.Command{
 		Use: "server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := run(); err != nil {
@@ -59,20 +59,21 @@ func run() (err error) {
 
 	r.Use(func(c *gin.Context) {
 		var s = new(struct {
-			Str string `json:"str"`
-			Num int `json:"num"`
-			Num8 int8 `json:"num8"`
-			Slice []string `json:"slice"`
-			Mh *multipart.FileHeader `json:"mh"`
-			Mhs []*multipart.FileHeader `json:"mhs"`
+			Str   *string                 `json:"str"`
+			Num   int                     `json:"num"`
+			Num8  int8                    `json:"num8"`
+			Slice []string                `json:"slice"`
+			Mh    *multipart.FileHeader   `json:"mh"`
+			Mhs   []*multipart.FileHeader `json:"mhs"`
 		})
 
 		c.Request.ParseMultipartForm(32 << 20)
-		if err := binding.Bind(c.Request, s); err != nil {
-			fmt.Println(err)
+		if setted, err := binding.Bind(c.Request, s); err != nil {
+			fmt.Printf("Error %s", err)
+		} else {
+			fmt.Printf("Setted %v \n", setted)
+			fmt.Printf("%v \n", s)
 		}
-
-		fmt.Println(s)
 	})
 
 	r.Use(erro.Handler)
@@ -84,6 +85,5 @@ func run() (err error) {
 		})
 	})
 
-	return r.Run(strings.Join([]string{ config.Host, config.Port }, ":"))
+	return r.Run(strings.Join([]string{config.Host, config.Port}, ":"))
 }
-
